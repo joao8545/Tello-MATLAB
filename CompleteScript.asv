@@ -1,0 +1,34 @@
+close;
+clear;
+clc;
+
+droneObj=ryze()
+cameraObj = camera(droneObj)
+
+data=load("Calibration\cameraParams.mat");
+intrinsics=data.cameraParams.Intrinsics;
+tagSize=8;
+tagFamily=["tag36h11",];
+
+while true
+    I=snapshot(cameraObj);
+    I=undistortImage(I,intrinsics,OutputView="same");
+    [id,loc,pose]=readAprilTag(I,tagFamily,intrinsics,tagSize);
+    worldPoints=[0 0 0; tagSize/2 0 0; 0 tagSize/2 0; 0 0 tagSize/2];
+    for i = 1:length(pose)
+        % Get image coordinates for axes.
+        imagePoints = world2img(worldPoints,pose(i),intrinsics);
+
+        % Draw colored axes.
+        I = insertShape(I,Line=[imagePoints(1,:) imagePoints(2,:); ...
+            imagePoints(1,:) imagePoints(3,:); imagePoints(1,:) imagePoints(4,:)], ...
+            Color=["red","green","blue"],LineWidth=7);
+
+        I = insertText(I,loc(1,:,i),id(i),BoxOpacity=1,FontSize=25);
+        disp("The target is "+pose(i).Translation(3)+"  cm away")
+    end
+    %imshow(I);
+    break;
+end
+
+
